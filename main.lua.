@@ -1,1 +1,402 @@
-local f,C,P,R=80,workspace.CurrentCamera,game:GetService("Players").LocalPlayer,game:GetService("RunService")local a,x,b,T={},{},false,false,false local v=Drawing.new("Circle")v.Visible,v.Thickness,v.Color,v.Filled,v.Radius=false,1.5,Color3.fromRGB(0,255,255),false,f R.RenderStepped:Connect(function()v.Position=C.ViewportSize/2 if not (a or b) then return end for _,m in ipairs(T) do local h,u=m:FindFirstChild("Head"),m:FindFirstChild("Humanoid")if h and u and u.Health>0 then if b then h.Size,h.Transparency,h.CanCollide,h.CanTouch,h.Massless=Vector3.new(10,10,10),.7,false,false,true end end end if a then local t,d=nil,f for _,m in ipairs(T) do local h,u=m:FindFirstChild("Head"),m:FindFirstChild("Humanoid")if h and u and u.Health>0 then local p,s=C:WorldToViewportPoint(h.Position)if s and p.Z>0 then local g=(Vector2.new(p.X,p.Y)-(C.ViewportSize/2)).Magnitude if g<d then d,t=g,h end end end end if t then C.CFrame=CFrame.new(C.CFrame.Position,C.CFrame.Position+C.CFrame.LookVector:Lerp((t.Position-C.CFrame.Position).Unit,.3))end end if x and P.Character and P.Character:FindFirstChild("Humanoid") then local n=P.Character.Humanoid:FindFirstChildOfClass("Animator")or P.Character.Humanoid for _,k in ipairs(n:GetPlayingAnimationTracks()) do k:AdjustSpeed(1.8)end end end)task.spawn(function()while task.wait(3)do local t={}if P.Character and P.Character:FindFirstChild("HumanoidRootPart") then for _,v in ipairs(workspace:GetPartBoundsInRadius(P.Character.HumanoidRootPart.Position,250)) do local m=v.Parent if m:IsA("Model") and m:FindFirstChild("Humanoid") and m~=P.Character and (m.Name:lower():find("zombie") or m.Name:lower():find("infected")) then table.insert(t,m)end end end T=t end end)local s=Instance.new("ScreenGui",game.CoreGui)local g=Instance.new("TextButton",s)g.Size,g.Position,g.BackgroundColor3,g.Text,g.TextColor3,g.Font,g.TextSize,g.Draggable=UDim2.new(0,40,0,40),UDim2.new(0,20,0,150),Color3.fromRGB(30,30,30),"-",Color3.fromRGB(0,255,255),"GothamBold",25,true local m=Instance.new("Frame",s)m.Size,m.Position,m.BackgroundColor3,m.BorderColor3,m.BorderSizePixel,m.Active,m.Draggable=UDim2.new(0,160,0,210),UDim2.new(0,70,0,150),Color3.fromRGB(10,10,10),Color3.fromRGB(0,255,255),2,true,true local l=Instance.new("TextLabel",m)l.Size,l.Text,l.BackgroundColor3,l.TextColor3,l.Font=UDim2.new(1,0,0,30),"RONX v3.9 LITE",Color3.fromRGB(25,25,25),Color3.fromRGB(0,255,255),"GothamBold" local c=Instance.new("Frame",m)c.Size,c.Position,c.BackgroundTransparency=UDim2.new(1,0,1,-30),UDim2.new(0,0,0,30),1 local ly=Instance.new("UIListLayout",c)ly.Padding,ly.HorizontalAlignment=UDim.new(0,5),"Center" local function k(t) local b=Instance.new("TextButton",c)b.Size,b.BackgroundColor3,b.Text,b.TextColor3,b.Font=UDim2.new(0,140,0,40),Color3.fromRGB(40,40,40),t,Color3.new(1,1,1),"SourceSansBold" return b end local aB,hB,xB=k("AIM: OFF"),k("HEAD: OFF"),k("AXE: OFF") g.MouseButton1Click:Connect(function()m.Visible=not m.Visible g.Text=m.Visible and "-" or "+" end)aB.MouseButton1Click:Connect(function()a=not a v.Visible=a aB.Text="AIM: "..(a and "ON" or "OFF")aB.BackgroundColor3=a and Color3.fromRGB(0,150,0) or Color3.fromRGB(40,40,40)end)hB.MouseButton1Click:Connect(function()b=not b hB.Text="HEAD: "..(b and "ON" or "OFF")hB.BackgroundColor3=b and Color3.fromRGB(0,150,150) or Color3.fromRGB(40,40,40)end)xB.MouseButton1Click:Connect(function()x=not x xB.Text="AXE: "..(x and "ON" or "OFF")xB.BackgroundColor3=x and Color3.fromRGB(150,100,0) or Color3.fromRGB(40,40,40)end)
+-- // 1. CORE PERFORMANCE (RONX RAM-KILLER V4)
+local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local FileName = "RONX_Permanent_Waypoints.json"
+
+local function sapuJagad()
+    collectgarbage("collect")
+    collectgarbage("setpause", 100)
+    collectgarbage("setstepmul", 5000)
+end
+
+RunService.Stepped:Connect(function()
+    if collectgarbage("count") > 200000 then sapuJagad() end
+end)
+
+settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+game:GetService("Lighting").GlobalShadows = false
+
+-- // 2. DATA STORAGE (ANTI-ILANG)
+local Waypoints = {}
+
+local function SaveToFile()
+    pcall(function()
+        local t = {}
+        for name, cf in pairs(Waypoints) do t[name] = {cf.X, cf.Y, cf.Z} end
+        writefile(FileName, HttpService:JSONEncode(t))
+    end)
+end
+
+local function LoadFromFile()
+    if isfile(FileName) then
+        pcall(function()
+            local decoded = HttpService:JSONDecode(readfile(FileName))
+            for name, pos in pairs(decoded) do Waypoints[name] = CFrame.new(pos[1], pos[2], pos[3]) end
+        end)
+    end
+end
+LoadFromFile()
+
+-- // 3. RAYFIELD LOAD
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Window = Rayfield:CreateWindow({
+   Name = "RONX XI || note kalo gak mau ke ban main sendiri jembut 🤫",
+   LoadingTitle = "by RONX XI",
+   LoadingSubtitle = "SABAR DIKIT YAA JEMBUT . 😡",
+   ConfigurationSaving = { Enabled = false }
+})
+
+local TabCombat = Window:CreateTab("Combat & Survival", 4483362458)
+local TabTP = Window:CreateTab("Teleport & Waypoint", 4483362458)
+local VisualTab = Window:CreateTab("Visuals", 4483362458)
+
+-- // CONFIG & GLOBALS
+_G.AimbotEnabled = false
+_G.AutoEatEnabled = false
+_G.FullBright = false
+_G.EspEnabled = false
+_G.WalkSpeed = 16
+_G.AimbotSmoothing = 0.15
+_G.FOVRadius = 180
+_G.AirWalkEnabled = false
+_G.BigHeadEnabled = false -- Toggle Big Head
+
+local Camera = workspace.CurrentCamera
+local ZombieFolder = workspace:FindFirstChild("ZombiesAlive")
+
+-- // FOV CIRCLE (FIXED)
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Thickness = 2
+FOVCircle.NumSides = 128
+FOVCircle.Radius = _G.FOVRadius
+FOVCircle.Filled = false
+FOVCircle.Transparency = 1
+FOVCircle.Color = Color3.fromRGB(255, 255, 0)
+FOVCircle.Visible = false
+
+-- // AIR WALK PART
+local AirPart = Instance.new("Part")
+AirPart.Name = "RX_AirWalkPart"
+AirPart.Size = Vector3.new(7, 1, 7)
+AirPart.Transparency = 1
+AirPart.Anchored = true
+AirPart.CanCollide = false
+
+-- // --- FUNCTIONS ---
+
+local function getLaper()
+    local p = Players.LocalPlayer
+    local h = 100
+    local g = p.PlayerGui:FindFirstChild("HungerSprintUI", true)
+    if g then
+        for _, v in pairs(g:GetDescendants()) do
+            if v:IsA("TextLabel") and v.Text:match("%d+") then h = tonumber(v.Text:match("%d+")) break end
+        end
+    end
+    return h
+end
+
+local function getClosestToCenter()
+    local target, shortestDist = nil, _G.FOVRadius
+    local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    if ZombieFolder then
+        for _, zombi in pairs(ZombieFolder:GetChildren()) do
+            local head = zombi:FindFirstChild("Head")
+            if head and zombi:FindFirstChildOfClass("Humanoid") and zombi.Humanoid.Health > 0 then
+                local pos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                if onScreen then
+                    local dist = (Vector2.new(pos.X, pos.Y) - screenCenter).Magnitude
+                    if dist < shortestDist then target = head shortestDist = dist end
+                end
+            end
+        end
+    end
+    return target
+end
+
+local function createESP(v)
+    if v:FindFirstChild("Head") and not v.Head:FindFirstChild("RX_ESP") then
+        local bgui = Instance.new("BillboardGui", v.Head)
+        bgui.Name = "RX_ESP"; bgui.AlwaysOnTop = true; bgui.Size = UDim2.new(0, 100, 0, 40); bgui.ExtentsOffset = Vector3.new(0, 3, 0)
+        local nametag = Instance.new("TextLabel", bgui)
+        nametag.BackgroundTransparency = 1; nametag.Size = UDim2.new(1, 0, 0.5, 0); nametag.Text = "ZOMBIE"; nametag.TextColor3 = Color3.fromRGB(255, 0, 0); nametag.Font = Enum.Font.GothamBold; nametag.TextSize = 12
+        local healthBG = Instance.new("Frame", bgui)
+        healthBG.BackgroundColor3 = Color3.fromRGB(50, 0, 0); healthBG.Position = UDim2.new(0.1, 0, 0.6, 0); healthBG.Size = UDim2.new(0.8, 0, 0.2, 0); healthBG.BorderSizePixel = 0
+        local healthBar = Instance.new("Frame", healthBG)
+        healthBar.BackgroundColor3 = Color3.fromRGB(0, 255, 0); healthBar.Size = UDim2.new(1, 0, 1, 0); healthBar.BorderSizePixel = 0
+        task.spawn(function()
+            local hum = v:WaitForChild("Humanoid")
+            while v:IsDescendantOf(workspace) and v:FindFirstChild("Head") and v.Head:FindFirstChild("RX_ESP") do
+                local hp = hum.Health / hum.MaxHealth
+                healthBar.Size = UDim2.new(math.clamp(hp, 0, 1), 0, 1, 0)
+                healthBar.BackgroundColor3 = (hp < 0.3) and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
+                task.wait(0.3)
+            end
+        end)
+    end
+end
+
+-- BIG HEAD FUNCTION
+local function scaleZombieHead(zombie, isBig)
+    task.spawn(function()
+        task.wait(0.5) -- Tunggu spawn biar gak error
+        local head = zombie:FindFirstChild("Head")
+        if head then
+            if isBig then
+                head.Size = Vector3.new(6.5, 6.5, 6.5) 
+                head.CanCollide = false
+                head.Transparency = 0.1
+            else
+                head.Size = Vector3.new(1.2, 1.2, 1.2) -- Balik ukuran normal
+                head.CanCollide = true
+                head.Transparency = 0
+            end
+        end
+    end)
+end
+
+if ZombieFolder then
+    ZombieFolder.ChildAdded:Connect(function(child)
+        if _G.BigHeadEnabled then scaleZombieHead(child, true) end
+    end)
+end
+
+-- // --- NATIVE WAYPOINT LIST ---
+local function OpenNativeWaypoint()
+    if CoreGui:FindFirstChild("RX_WaypointGUI") then return end
+
+    local ScreenGui = Instance.new("ScreenGui", CoreGui)
+    ScreenGui.Name = "RX_WaypointGUI"
+
+    local MainFrame = Instance.new("Frame", ScreenGui)
+    MainFrame.Size = UDim2.new(0, 260, 0, 350)
+    MainFrame.Position = UDim2.new(0.5, -130, 0.3, 0)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    MainFrame.BorderSizePixel = 0
+    MainFrame.Active = true
+    MainFrame.Draggable = true
+
+    local TitleBar = Instance.new("Frame", MainFrame)
+    TitleBar.Size = UDim2.new(1, 0, 0, 40)
+    TitleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    TitleBar.BorderSizePixel = 0
+
+    local TitleText = Instance.new("TextLabel", TitleBar)
+    TitleText.Size = UDim2.new(0.8, 0, 1, 0)
+    TitleText.Position = UDim2.new(0.05, 0, 0, 0)
+    TitleText.Text = "WAYPOINT MANAGER"
+    TitleText.TextColor3 = Color3.new(1, 1, 1)
+    TitleText.Font = Enum.Font.GothamBold
+    TitleText.TextXAlignment = Enum.TextXAlignment.Left
+    TitleText.BackgroundTransparency = 1
+    TitleText.TextSize = 14
+
+    local MiniBtn = Instance.new("TextButton", TitleBar)
+    MiniBtn.Size = UDim2.new(0.15, 0, 1, 0)
+    MiniBtn.Position = UDim2.new(0.85, 0, 0, 0)
+    MiniBtn.Text = "-"
+    MiniBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    MiniBtn.TextColor3 = Color3.new(1, 1, 1)
+    MiniBtn.Font = Enum.Font.GothamBold
+    MiniBtn.BorderSizePixel = 0
+
+    local ScrollList = Instance.new("ScrollingFrame", MainFrame)
+    ScrollList.Size = UDim2.new(0.9, 0, 0, 160)
+    ScrollList.Position = UDim2.new(0.05, 0, 0.15, 0)
+    ScrollList.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    ScrollList.ScrollBarThickness = 5
+    ScrollList.BorderSizePixel = 0
+
+    local ListLayout = Instance.new("UIListLayout", ScrollList)
+    ListLayout.Padding = UDim.new(0, 5)
+
+    local InputBox = Instance.new("TextBox", MainFrame)
+    InputBox.Size = UDim2.new(0.9, 0, 0, 40)
+    InputBox.Position = UDim2.new(0.05, 0, 0.65, 0)
+    InputBox.PlaceholderText = "Ketik Nama Lokasi Baru..."
+    InputBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    InputBox.TextColor3 = Color3.new(1, 1, 1)
+    InputBox.Font = Enum.Font.Gotham
+    InputBox.BorderSizePixel = 0
+
+    local SaveBtn = Instance.new("TextButton", MainFrame)
+    SaveBtn.Size = UDim2.new(0.9, 0, 0, 45)
+    SaveBtn.Position = UDim2.new(0.05, 0, 0.8, 0)
+    SaveBtn.Text = "SAVE POINT 📍"
+    SaveBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+    SaveBtn.TextColor3 = Color3.new(1, 1, 1)
+    SaveBtn.Font = Enum.Font.GothamBold
+    SaveBtn.BorderSizePixel = 0
+
+    local function RefreshList()
+        for _, child in pairs(ScrollList:GetChildren()) do
+            if child:IsA("Frame") then child:Destroy() end
+        end
+        
+        for name, cf in pairs(Waypoints) do
+            local Row = Instance.new("Frame", ScrollList)
+            Row.Size = UDim2.new(1, 0, 0, 35)
+            Row.BackgroundTransparency = 1
+            
+            local TpBtn = Instance.new("TextButton", Row)
+            TpBtn.Size = UDim2.new(0.8, -5, 1, 0)
+            TpBtn.Text = " " .. name
+            TpBtn.TextXAlignment = Enum.TextXAlignment.Left
+            TpBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            TpBtn.TextColor3 = Color3.new(1, 1, 1)
+            TpBtn.Font = Enum.Font.Gotham
+            TpBtn.BorderSizePixel = 0
+            
+            local DelBtn = Instance.new("TextButton", Row)
+            DelBtn.Size = UDim2.new(0.2, 0, 1, 0)
+            DelBtn.Position = UDim2.new(0.8, 0, 0, 0)
+            DelBtn.Text = "X"
+            DelBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+            DelBtn.TextColor3 = Color3.new(1, 1, 1)
+            DelBtn.Font = Enum.Font.GothamBold
+            DelBtn.BorderSizePixel = 0
+            
+            TpBtn.MouseButton1Click:Connect(function()
+                local lp = Players.LocalPlayer
+                if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                    lp.Character.HumanoidRootPart.CFrame = cf
+                    TpBtn.Text = " Otw..."
+                    task.wait(0.5)
+                    TpBtn.Text = " " .. name
+                end
+            end)
+            
+            DelBtn.MouseButton1Click:Connect(function()
+                Waypoints[name] = nil
+                SaveToFile()
+                RefreshList()
+            end)
+        end
+        ScrollList.CanvasSize = UDim2.new(0, 0, 0, ListLayout.AbsoluteContentSize.Y + 10)
+    end
+
+    SaveBtn.MouseButton1Click:Connect(function()
+        local name = InputBox.Text
+        local lp = Players.LocalPlayer
+        if name ~= "" and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+            Waypoints[name] = lp.Character.HumanoidRootPart.CFrame
+            SaveToFile()
+            InputBox.Text = ""
+            RefreshList()
+            SaveBtn.Text = "TERSISMPAN! ✅"
+            task.wait(1)
+            SaveBtn.Text = "SAVE POINT 📍"
+        end
+    end)
+
+    local isMinimized = false
+    MiniBtn.MouseButton1Click:Connect(function()
+        isMinimized = not isMinimized
+        if isMinimized then
+            MainFrame:TweenSize(UDim2.new(0, 260, 0, 40), "Out", "Quad", 0.2, true)
+            MiniBtn.Text = "+"
+            ScrollList.Visible = false; InputBox.Visible = false; SaveBtn.Visible = false
+        else
+            MainFrame:TweenSize(UDim2.new(0, 260, 0, 350), "Out", "Quad", 0.2, true)
+            MiniBtn.Text = "-"
+            task.wait(0.2)
+            ScrollList.Visible = true; InputBox.Visible = true; SaveBtn.Visible = true
+        end
+    end)
+
+    RefreshList()
+end
+
+-- // --- UI BUTTONS (RAYFIELD) ---
+
+-- COMBAT TAB
+TabCombat:CreateToggle({Name = "Enable Aimlock", CurrentValue = false, Callback = function(v) _G.AimbotEnabled = v FOVCircle.Visible = v end})
+
+-- SMOOTHING SLIDER
+TabCombat:CreateSlider({
+   Name = "Aim Smoothing",
+   Range = {0.01, 1},
+   Increment = 0.01,
+   CurrentValue = 0.15,
+   Callback = function(Value) _G.AimbotSmoothing = Value end,
+})
+
+-- TOGGLE BIG HEAD ZOMBIE 🧟‍♂️
+TabCombat:CreateToggle({
+   Name = "Big Head (Hitbox 6.5) 🧟‍♂️",
+   CurrentValue = false,
+   Callback = function(Value)
+       _G.BigHeadEnabled = Value
+       if ZombieFolder then
+           for _, v in pairs(ZombieFolder:GetChildren()) do
+               scaleZombieHead(v, Value)
+           end
+       end
+   end,
+})
+
+TabCombat:CreateSlider({Name = "WalkSpeed", Range = {16, 150}, Increment = 1, CurrentValue = 16, Callback = function(v) _G.WalkSpeed = v end})
+TabCombat:CreateToggle({Name = "Smart Auto Eat (45%)", CurrentValue = false, Callback = function(v) _G.AutoEatEnabled = v end})
+
+TabCombat:CreateToggle({
+   Name = "Air Walk (Jalan Di Udara) 🚀",
+   CurrentValue = false,
+   Callback = function(Value)
+       _G.AirWalkEnabled = Value
+       if not Value then AirPart.CanCollide = false; AirPart.Parent = nil else AirPart.Parent = workspace end
+   end,
+})
+
+-- TELEPORT TAB
+TabTP:CreateButton({Name = "OPEN NATIVE WAYPOINT LIST 📋", Callback = function() OpenNativeWaypoint() end})
+
+-- VISUAL TAB
+VisualTab:CreateToggle({Name = "RX-ESP (Health Bar)", CurrentValue = false, Callback = function(v) _G.EspEnabled = v end})
+VisualTab:CreateToggle({Name = "Full Bright", CurrentValue = false, Callback = function(v) _G.FullBright = v end})
+
+-- // --- MAIN LOOPS ---
+
+RunService.RenderStepped:Connect(function()
+    FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    local lp = Players.LocalPlayer
+    
+    if lp.Character and lp.Character:FindFirstChild("Humanoid") then
+        lp.Character.Humanoid.WalkSpeed = _G.WalkSpeed
+        if _G.AirWalkEnabled and lp.Character:FindFirstChild("HumanoidRootPart") then
+            AirPart.CanCollide = true
+            AirPart.CFrame = lp.Character.HumanoidRootPart.CFrame * CFrame.new(0, -3.5, 0)
+        end
+    end
+
+    if _G.FullBright then game:GetService("Lighting").Ambient = Color3.new(1,1,1) end
+    if _G.AimbotEnabled then
+        local t = getClosestToCenter()
+        if t then 
+            Camera.CFrame = Camera.CFrame:Lerp(CFrame.lookAt(Camera.CFrame.Position, t.Position), _G.AimbotSmoothing) 
+        end
+    end
+    if _G.EspEnabled and ZombieFolder then
+        for _, z in pairs(ZombieFolder:GetChildren()) do createESP(z) end
+    elseif not _G.EspEnabled and ZombieFolder then
+        for _, z in pairs(ZombieFolder:GetChildren()) do
+            if z:FindFirstChild("Head") and z.Head:FindFirstChild("RX_ESP") then z.Head.RX_ESP:Destroy() end
+        end
+    end
+end)
+
+task.spawn(function()
+    while task.wait(5) do
+        if _G.AutoEatEnabled and getLaper() <= 45 then
+            local p = Players.LocalPlayer
+            for _, v in pairs(p.Backpack:GetChildren()) do
+                if v:IsA("Tool") and (v.Name:lower():find("berry") or v.Name:lower():find("cook")) then
+                    p.Character.Humanoid:EquipTool(v); task.wait(0.4); v:Activate(); task.wait(0.6); p.Character.Humanoid:UnequipTools(); break 
+                end
+            end
+        end
+    end
+end)
+
+Rayfield:Notify({Title = "RONX V28 READY", Content = "Big Head & Full Features Loaded! 🤫🗿", Duration = 5})
