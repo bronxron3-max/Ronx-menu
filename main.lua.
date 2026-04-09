@@ -1,20 +1,11 @@
--- // 1. CORE PERFORMANCE (RONX RAM-KILLER V4)
+-- // 1. CORE PERFORMANCE (RONX OPTIMIZED)
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local FileName = "RONX_Permanent_Waypoints.json"
 
-local function sapuJagad()
-    collectgarbage("collect")
-    collectgarbage("setpause", 100)
-    collectgarbage("setstepmul", 5000)
-end
-
-RunService.Stepped:Connect(function()
-    if collectgarbage("count") > 200000 then sapuJagad() end
-end)
-
+-- Mengurangi beban rendering supaya FPS lebih stabil
 settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
 game:GetService("Lighting").GlobalShadows = false
 
@@ -42,7 +33,7 @@ LoadFromFile()
 -- // 3. RAYFIELD LOAD
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local Window = Rayfield:CreateWindow({
-   Name = "RONX XI || note kalo gak mau ke ban main sendiri jembut 🤫",
+   Name = "RONX XI||🤫",
    LoadingTitle = "by RONX XI",
    LoadingSubtitle = "SABAR DIKIT YAA JEMBUT . 😡",
    ConfigurationSaving = { Enabled = false }
@@ -61,12 +52,12 @@ _G.WalkSpeed = 16
 _G.AimbotSmoothing = 0.15
 _G.FOVRadius = 180
 _G.AirWalkEnabled = false
-_G.BigHeadEnabled = false -- Toggle Big Head
+_G.BigHeadEnabled = false
 
 local Camera = workspace.CurrentCamera
 local ZombieFolder = workspace:FindFirstChild("ZombiesAlive")
 
--- // FOV CIRCLE (FIXED)
+-- // FOV CIRCLE
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Thickness = 2
 FOVCircle.NumSides = 128
@@ -138,10 +129,9 @@ local function createESP(v)
     end
 end
 
--- BIG HEAD FUNCTION
 local function scaleZombieHead(zombie, isBig)
     task.spawn(function()
-        task.wait(0.5) -- Tunggu spawn biar gak error
+        task.wait(0.5)
         local head = zombie:FindFirstChild("Head")
         if head then
             if isBig then
@@ -149,7 +139,7 @@ local function scaleZombieHead(zombie, isBig)
                 head.CanCollide = false
                 head.Transparency = 0.1
             else
-                head.Size = Vector3.new(1.2, 1.2, 1.2) -- Balik ukuran normal
+                head.Size = Vector3.new(1.2, 1.2, 1.2)
                 head.CanCollide = true
                 head.Transparency = 0
             end
@@ -234,45 +224,23 @@ local function OpenNativeWaypoint()
         for _, child in pairs(ScrollList:GetChildren()) do
             if child:IsA("Frame") then child:Destroy() end
         end
-        
         for name, cf in pairs(Waypoints) do
             local Row = Instance.new("Frame", ScrollList)
             Row.Size = UDim2.new(1, 0, 0, 35)
             Row.BackgroundTransparency = 1
-            
             local TpBtn = Instance.new("TextButton", Row)
-            TpBtn.Size = UDim2.new(0.8, -5, 1, 0)
-            TpBtn.Text = " " .. name
-            TpBtn.TextXAlignment = Enum.TextXAlignment.Left
-            TpBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-            TpBtn.TextColor3 = Color3.new(1, 1, 1)
-            TpBtn.Font = Enum.Font.Gotham
-            TpBtn.BorderSizePixel = 0
-            
+            TpBtn.Size = UDim2.new(0.8, -5, 1, 0); TpBtn.Text = " " .. name; TpBtn.TextXAlignment = Enum.TextXAlignment.Left
+            TpBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50); TpBtn.TextColor3 = Color3.new(1, 1, 1); TpBtn.Font = Enum.Font.Gotham; TpBtn.BorderSizePixel = 0
             local DelBtn = Instance.new("TextButton", Row)
-            DelBtn.Size = UDim2.new(0.2, 0, 1, 0)
-            DelBtn.Position = UDim2.new(0.8, 0, 0, 0)
-            DelBtn.Text = "X"
-            DelBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-            DelBtn.TextColor3 = Color3.new(1, 1, 1)
-            DelBtn.Font = Enum.Font.GothamBold
-            DelBtn.BorderSizePixel = 0
-            
+            DelBtn.Size = UDim2.new(0.2, 0, 1, 0); DelBtn.Position = UDim2.new(0.8, 0, 0, 0); DelBtn.Text = "X"
+            DelBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50); DelBtn.TextColor3 = Color3.new(1, 1, 1); DelBtn.Font = Enum.Font.GothamBold; DelBtn.BorderSizePixel = 0
             TpBtn.MouseButton1Click:Connect(function()
                 local lp = Players.LocalPlayer
                 if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
                     lp.Character.HumanoidRootPart.CFrame = cf
-                    TpBtn.Text = " Otw..."
-                    task.wait(0.5)
-                    TpBtn.Text = " " .. name
                 end
             end)
-            
-            DelBtn.MouseButton1Click:Connect(function()
-                Waypoints[name] = nil
-                SaveToFile()
-                RefreshList()
-            end)
+            DelBtn.MouseButton1Click:Connect(function() Waypoints[name] = nil; SaveToFile(); RefreshList() end)
         end
         ScrollList.CanvasSize = UDim2.new(0, 0, 0, ListLayout.AbsoluteContentSize.Y + 10)
     end
@@ -282,12 +250,7 @@ local function OpenNativeWaypoint()
         local lp = Players.LocalPlayer
         if name ~= "" and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
             Waypoints[name] = lp.Character.HumanoidRootPart.CFrame
-            SaveToFile()
-            InputBox.Text = ""
-            RefreshList()
-            SaveBtn.Text = "TERSISMPAN! ✅"
-            task.wait(1)
-            SaveBtn.Text = "SAVE POINT 📍"
+            SaveToFile(); InputBox.Text = ""; RefreshList()
         end
     end)
 
@@ -305,16 +268,12 @@ local function OpenNativeWaypoint()
             ScrollList.Visible = true; InputBox.Visible = true; SaveBtn.Visible = true
         end
     end)
-
     RefreshList()
 end
 
 -- // --- UI BUTTONS (RAYFIELD) ---
-
--- COMBAT TAB
 TabCombat:CreateToggle({Name = "Enable Aimlock", CurrentValue = false, Callback = function(v) _G.AimbotEnabled = v FOVCircle.Visible = v end})
 
--- SMOOTHING SLIDER
 TabCombat:CreateSlider({
    Name = "Aim Smoothing",
    Range = {0.01, 1},
@@ -323,16 +282,13 @@ TabCombat:CreateSlider({
    Callback = function(Value) _G.AimbotSmoothing = Value end,
 })
 
--- TOGGLE BIG HEAD ZOMBIE 🧟‍♂️
 TabCombat:CreateToggle({
    Name = "Big Head (Hitbox 6.5) 🧟‍♂️",
    CurrentValue = false,
    Callback = function(Value)
        _G.BigHeadEnabled = Value
        if ZombieFolder then
-           for _, v in pairs(ZombieFolder:GetChildren()) do
-               scaleZombieHead(v, Value)
-           end
+           for _, v in pairs(ZombieFolder:GetChildren()) do scaleZombieHead(v, Value) end
        end
    end,
 })
@@ -349,15 +305,12 @@ TabCombat:CreateToggle({
    end,
 })
 
--- TELEPORT TAB
 TabTP:CreateButton({Name = "OPEN NATIVE WAYPOINT LIST 📋", Callback = function() OpenNativeWaypoint() end})
 
--- VISUAL TAB
 VisualTab:CreateToggle({Name = "RX-ESP (Health Bar)", CurrentValue = false, Callback = function(v) _G.EspEnabled = v end})
 VisualTab:CreateToggle({Name = "Full Bright", CurrentValue = false, Callback = function(v) _G.FullBright = v end})
 
 -- // --- MAIN LOOPS ---
-
 RunService.RenderStepped:Connect(function()
     FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     local lp = Players.LocalPlayer
@@ -373,9 +326,7 @@ RunService.RenderStepped:Connect(function()
     if _G.FullBright then game:GetService("Lighting").Ambient = Color3.new(1,1,1) end
     if _G.AimbotEnabled then
         local t = getClosestToCenter()
-        if t then 
-            Camera.CFrame = Camera.CFrame:Lerp(CFrame.lookAt(Camera.CFrame.Position, t.Position), _G.AimbotSmoothing) 
-        end
+        if t then Camera.CFrame = Camera.CFrame:Lerp(CFrame.lookAt(Camera.CFrame.Position, t.Position), _G.AimbotSmoothing) end
     end
     if _G.EspEnabled and ZombieFolder then
         for _, z in pairs(ZombieFolder:GetChildren()) do createESP(z) end
@@ -399,4 +350,5 @@ task.spawn(function()
     end
 end)
 
-Rayfield:Notify({Title = "RONX V28 READY", Content = "Big Head & Full Features Loaded! 🤫🗿", Duration = 5})
+Rayfield:Notify({Title = "RONX V28 READY", Content = "Script Berhasil Di-load!", Duration = 5})
+
